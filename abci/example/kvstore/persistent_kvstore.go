@@ -67,17 +67,44 @@ func (app *PersistentKVStoreApplication) SetOption(req types.RequestSetOption) t
 }
 
 // tx is either "val:pubkey!power" or "key=value" or just arbitrary bytes
-func (app *PersistentKVStoreApplication) DeliverTx(req types.RequestDeliverTx) types.ResponseDeliverTx {
+func (app *PersistentKVStoreApplication) DeliverBlock(req types.RequestDeliverBlock) types.ResponseDeliverBlock {
 	// if it starts with "val:", update the validator set
 	// format is "val:pubkey!power"
-	if isValidatorTx(req.Tx) {
-		// update validators in the merkle tree
-		// and in app.ValUpdates
-		return app.execValidatorTx(req.Tx)
+	var txs = make([]*types.ResponseDeliverTx, 0, len(req.Txs))
+	for _, tx := range req.Txs {
+		if isValidatorTx(tx) {
+			// update validators in the merkle tree
+			// and in app.ValUpdates
+			valTX := app.execValidatorTx(tx)
+			txs = append(txs, &valTX)
+		} else {
+			txs = append(txs, &types.ResponseDeliverTx{Data: tx})
+		}
 	}
 
-	// otherwise, update the key-value store
-	return app.app.DeliverTx(req)
+	app.ValUpdates = make([]types.ValidatorUpdate, 0)
+
+	// Punish validators who committed equivocation.
+	for _, ev := range req.ByzantineValidators {
+		if ev.Type == types.EvidenceType_DUPLICATE_VOTE {
+			addr := string(ev.Validator.Address)
+			if pubKey, ok := app.valAddrToPubKeyMap[addr]; ok {
+				app.updateValidator(types.ValidatorUpdate{
+					PubKey: pubKey,
+					Power:  ev.Validator.Power - 1,
+				})
+				app.logger.Info("Decreased val power by 1 because of the equivocation",
+					"val", addr)
+			} else {
+				app.logger.Error("Wanted to punish val, but can't find it",
+					"val", addr)
+			}
+		}
+	}
+
+	return types.ResponseDeliverBlock{
+		ValidatorUpdates: app.ValUpdates,
+	}
 }
 
 func (app *PersistentKVStoreApplication) CheckTx(req types.RequestCheckTx) types.ResponseCheckTx {
@@ -117,37 +144,6 @@ func (app *PersistentKVStoreApplication) InitChain(req types.RequestInitChain) t
 		}
 	}
 	return types.ResponseInitChain{}
-}
-
-// Track the block hash and header information
-func (app *PersistentKVStoreApplication) BeginBlock(req types.RequestBeginBlock) types.ResponseBeginBlock {
-	// reset valset changes
-	app.ValUpdates = make([]types.ValidatorUpdate, 0)
-
-	// Punish validators who committed equivocation.
-	for _, ev := range req.ByzantineValidators {
-		if ev.Type == types.EvidenceType_DUPLICATE_VOTE {
-			addr := string(ev.Validator.Address)
-			if pubKey, ok := app.valAddrToPubKeyMap[addr]; ok {
-				app.updateValidator(types.ValidatorUpdate{
-					PubKey: pubKey,
-					Power:  ev.Validator.Power - 1,
-				})
-				app.logger.Info("Decreased val power by 1 because of the equivocation",
-					"val", addr)
-			} else {
-				app.logger.Error("Wanted to punish val, but can't find it",
-					"val", addr)
-			}
-		}
-	}
-
-	return types.ResponseBeginBlock{}
-}
-
-// Update the validator set
-func (app *PersistentKVStoreApplication) EndBlock(req types.RequestEndBlock) types.ResponseEndBlock {
-	return types.ResponseEndBlock{ValidatorUpdates: app.ValUpdates}
 }
 
 func (app *PersistentKVStoreApplication) ListSnapshots(

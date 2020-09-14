@@ -237,10 +237,6 @@ func (cli *socketClient) SetOptionAsync(req types.RequestSetOption) *ReqRes {
 	return cli.queueRequest(types.ToRequestSetOption(req))
 }
 
-func (cli *socketClient) DeliverTxAsync(req types.RequestDeliverTx) *ReqRes {
-	return cli.queueRequest(types.ToRequestDeliverTx(req))
-}
-
 func (cli *socketClient) CheckTxAsync(req types.RequestCheckTx) *ReqRes {
 	return cli.queueRequest(types.ToRequestCheckTx(req))
 }
@@ -257,12 +253,8 @@ func (cli *socketClient) InitChainAsync(req types.RequestInitChain) *ReqRes {
 	return cli.queueRequest(types.ToRequestInitChain(req))
 }
 
-func (cli *socketClient) BeginBlockAsync(req types.RequestBeginBlock) *ReqRes {
-	return cli.queueRequest(types.ToRequestBeginBlock(req))
-}
-
-func (cli *socketClient) EndBlockAsync(req types.RequestEndBlock) *ReqRes {
-	return cli.queueRequest(types.ToRequestEndBlock(req))
+func (cli *socketClient) DeliverBlockAsync(req types.RequestDeliverBlock) *ReqRes {
+	return cli.queueRequest(types.ToRequestDeliverBlock(req))
 }
 
 func (cli *socketClient) ListSnapshotsAsync(req types.RequestListSnapshots) *ReqRes {
@@ -319,15 +311,6 @@ func (cli *socketClient) SetOptionSync(req types.RequestSetOption) (*types.Respo
 	return reqres.Response.GetSetOption(), cli.Error()
 }
 
-func (cli *socketClient) DeliverTxSync(req types.RequestDeliverTx) (*types.ResponseDeliverTx, error) {
-	reqres := cli.queueRequest(types.ToRequestDeliverTx(req))
-	if err := cli.FlushSync(); err != nil {
-		return nil, err
-	}
-
-	return reqres.Response.GetDeliverTx(), cli.Error()
-}
-
 func (cli *socketClient) CheckTxSync(req types.RequestCheckTx) (*types.ResponseCheckTx, error) {
 	reqres := cli.queueRequest(types.ToRequestCheckTx(req))
 	if err := cli.FlushSync(); err != nil {
@@ -364,22 +347,13 @@ func (cli *socketClient) InitChainSync(req types.RequestInitChain) (*types.Respo
 	return reqres.Response.GetInitChain(), cli.Error()
 }
 
-func (cli *socketClient) BeginBlockSync(req types.RequestBeginBlock) (*types.ResponseBeginBlock, error) {
-	reqres := cli.queueRequest(types.ToRequestBeginBlock(req))
+func (cli *socketClient) DeliverBlockSync(req types.RequestDeliverBlock) (*types.ResponseDeliverBlock, error) {
+	reqres := cli.queueRequest(types.ToRequestDeliverBlock(req))
 	if err := cli.FlushSync(); err != nil {
 		return nil, err
 	}
 
-	return reqres.Response.GetBeginBlock(), cli.Error()
-}
-
-func (cli *socketClient) EndBlockSync(req types.RequestEndBlock) (*types.ResponseEndBlock, error) {
-	reqres := cli.queueRequest(types.ToRequestEndBlock(req))
-	if err := cli.FlushSync(); err != nil {
-		return nil, err
-	}
-
-	return reqres.Response.GetEndBlock(), cli.Error()
+	return reqres.Response.GetDeliverBlock(), cli.Error()
 }
 
 func (cli *socketClient) ListSnapshotsSync(req types.RequestListSnapshots) (*types.ResponseListSnapshots, error) {
@@ -472,8 +446,6 @@ func resMatchesReq(req *types.Request, res *types.Response) (ok bool) {
 		_, ok = res.Value.(*types.Response_Info)
 	case *types.Request_SetOption:
 		_, ok = res.Value.(*types.Response_SetOption)
-	case *types.Request_DeliverTx:
-		_, ok = res.Value.(*types.Response_DeliverTx)
 	case *types.Request_CheckTx:
 		_, ok = res.Value.(*types.Response_CheckTx)
 	case *types.Request_Commit:
@@ -482,10 +454,8 @@ func resMatchesReq(req *types.Request, res *types.Response) (ok bool) {
 		_, ok = res.Value.(*types.Response_Query)
 	case *types.Request_InitChain:
 		_, ok = res.Value.(*types.Response_InitChain)
-	case *types.Request_BeginBlock:
-		_, ok = res.Value.(*types.Response_BeginBlock)
-	case *types.Request_EndBlock:
-		_, ok = res.Value.(*types.Response_EndBlock)
+	case *types.Request_DeliverBlock:
+		_, ok = res.Value.(*types.Response_DeliverBlock)
 	}
 	return ok
 }

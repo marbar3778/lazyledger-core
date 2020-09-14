@@ -137,12 +137,13 @@ func TestPruneStates(t *testing.T) {
 				sm.SaveState(db, state)
 
 				sm.SaveABCIResponses(db, h, &tmstate.ABCIResponses{
-					DeliverTxs: []*abci.ResponseDeliverTx{
-						{Data: []byte{1}},
-						{Data: []byte{2}},
-						{Data: []byte{3}},
-					},
-				})
+					DeliverBlock: &abci.ResponseDeliverBlock{
+						Txs: []*abci.ResponseDeliverTx{
+							{Data: []byte{1}},
+							{Data: []byte{2}},
+							{Data: []byte{3}},
+						},
+					}})
 			}
 
 			// Test assertions
@@ -191,17 +192,17 @@ func TestPruneStates(t *testing.T) {
 
 func TestABCIResponsesResultsHash(t *testing.T) {
 	responses := &tmstate.ABCIResponses{
-		BeginBlock: &abci.ResponseBeginBlock{},
-		DeliverTxs: []*abci.ResponseDeliverTx{
-			{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
+		DeliverBlock: &abci.ResponseDeliverBlock{
+			Txs: []*abci.ResponseDeliverTx{
+				{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
+			},
 		},
-		EndBlock: &abci.ResponseEndBlock{},
 	}
 
 	root := sm.ABCIResponsesResultsHash(responses)
 
 	// root should be Merkle tree root of DeliverTxs responses
-	results := types.NewResults(responses.DeliverTxs)
+	results := types.NewResults(responses.DeliverBlock.Txs)
 	assert.Equal(t, root, results.Hash())
 
 	// test we can prove first DeliverTx

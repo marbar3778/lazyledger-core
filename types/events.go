@@ -66,16 +66,14 @@ func init() {
 type EventDataNewBlock struct {
 	Block *Block `json:"block"`
 
-	ResultBeginBlock abci.ResponseBeginBlock `json:"result_begin_block"`
-	ResultEndBlock   abci.ResponseEndBlock   `json:"result_end_block"`
+	ResultDeliverBlock abci.ResponseDeliverBlock `json:"result_deliver_block"`
 }
 
 type EventDataNewBlockHeader struct {
 	Header Header `json:"header"`
 
-	NumTxs           int64                   `json:"num_txs"` // Number of txs in a block
-	ResultBeginBlock abci.ResponseBeginBlock `json:"result_begin_block"`
-	ResultEndBlock   abci.ResponseEndBlock   `json:"result_end_block"`
+	NumTxs             int64                     `json:"num_txs"` // Number of txs in a block
+	ResultDeliverBlock abci.ResponseDeliverBlock `json:"result_deliver_block"`
 }
 
 type EventDataNewEvidence struct {

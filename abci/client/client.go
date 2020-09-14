@@ -29,13 +29,14 @@ type Client interface {
 	EchoAsync(msg string) *ReqRes
 	InfoAsync(types.RequestInfo) *ReqRes
 	SetOptionAsync(types.RequestSetOption) *ReqRes
-	DeliverTxAsync(types.RequestDeliverTx) *ReqRes
+	// DeliverTxAsync(types.RequestDeliverTx) *ReqRes
 	CheckTxAsync(types.RequestCheckTx) *ReqRes
 	QueryAsync(types.RequestQuery) *ReqRes
 	CommitAsync() *ReqRes
 	InitChainAsync(types.RequestInitChain) *ReqRes
-	BeginBlockAsync(types.RequestBeginBlock) *ReqRes
-	EndBlockAsync(types.RequestEndBlock) *ReqRes
+	// BeginBlockAsync(types.RequestBeginBlock) *ReqRes
+	// EndBlockAsync(types.RequestEndBlock) *ReqRes
+	DeliverBlockAsync(types.RequestDeliverBlock) *ReqRes
 	ListSnapshotsAsync(types.RequestListSnapshots) *ReqRes
 	OfferSnapshotAsync(types.RequestOfferSnapshot) *ReqRes
 	LoadSnapshotChunkAsync(types.RequestLoadSnapshotChunk) *ReqRes
@@ -45,13 +46,14 @@ type Client interface {
 	EchoSync(msg string) (*types.ResponseEcho, error)
 	InfoSync(types.RequestInfo) (*types.ResponseInfo, error)
 	SetOptionSync(types.RequestSetOption) (*types.ResponseSetOption, error)
-	DeliverTxSync(types.RequestDeliverTx) (*types.ResponseDeliverTx, error)
+	// DeliverTxSync(types.RequestDeliverTx) (*types.ResponseDeliverTx, error)
 	CheckTxSync(types.RequestCheckTx) (*types.ResponseCheckTx, error)
 	QuerySync(types.RequestQuery) (*types.ResponseQuery, error)
 	CommitSync() (*types.ResponseCommit, error)
 	InitChainSync(types.RequestInitChain) (*types.ResponseInitChain, error)
-	BeginBlockSync(types.RequestBeginBlock) (*types.ResponseBeginBlock, error)
-	EndBlockSync(types.RequestEndBlock) (*types.ResponseEndBlock, error)
+	// BeginBlockSync(types.RequestBeginBlock) (*types.ResponseBeginBlock, error)
+	// EndBlockSync(types.RequestEndBlock) (*types.ResponseEndBlock, error)
+	DeliverBlockSync(types.RequestDeliverBlock) (*types.ResponseDeliverBlock, error)
 	ListSnapshotsSync(types.RequestListSnapshots) (*types.ResponseListSnapshots, error)
 	OfferSnapshotSync(types.RequestOfferSnapshot) (*types.ResponseOfferSnapshot, error)
 	LoadSnapshotChunkSync(types.RequestLoadSnapshotChunk) (*types.ResponseLoadSnapshotChunk, error)

@@ -16,9 +16,7 @@ type AppConnConsensus interface {
 
 	InitChainSync(types.RequestInitChain) (*types.ResponseInitChain, error)
 
-	BeginBlockSync(types.RequestBeginBlock) (*types.ResponseBeginBlock, error)
-	DeliverTxAsync(types.RequestDeliverTx) *abcicli.ReqRes
-	EndBlockSync(types.RequestEndBlock) (*types.ResponseEndBlock, error)
+	DeliverBlockSync(types.RequestDeliverBlock) (*types.ResponseDeliverBlock, error)
 	CommitSync() (*types.ResponseCommit, error)
 }
 
@@ -77,16 +75,8 @@ func (app *appConnConsensus) InitChainSync(req types.RequestInitChain) (*types.R
 	return app.appConn.InitChainSync(req)
 }
 
-func (app *appConnConsensus) BeginBlockSync(req types.RequestBeginBlock) (*types.ResponseBeginBlock, error) {
-	return app.appConn.BeginBlockSync(req)
-}
-
-func (app *appConnConsensus) DeliverTxAsync(req types.RequestDeliverTx) *abcicli.ReqRes {
-	return app.appConn.DeliverTxAsync(req)
-}
-
-func (app *appConnConsensus) EndBlockSync(req types.RequestEndBlock) (*types.ResponseEndBlock, error) {
-	return app.appConn.EndBlockSync(req)
+func (app *appConnConsensus) DeliverBlockSync(req types.RequestDeliverBlock) (*types.ResponseDeliverBlock, error) {
+	return app.appConn.DeliverBlockSync(req)
 }
 
 func (app *appConnConsensus) CommitSync() (*types.ResponseCommit, error) {

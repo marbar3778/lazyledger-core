@@ -76,13 +76,9 @@ func TestEventBusPublishEventNewBlock(t *testing.T) {
 	})
 
 	block := MakeBlock(0, []Tx{}, nil, []Evidence{})
-	resultBeginBlock := abci.ResponseBeginBlock{
+	resultDeliverBlock := abci.ResponseDeliverBlock{
 		Events: []abci.Event{
 			{Type: "testType", Attributes: []abci.EventAttribute{{Key: []byte("baz"), Value: []byte("1")}}},
-		},
-	}
-	resultEndBlock := abci.ResponseEndBlock{
-		Events: []abci.Event{
 			{Type: "testType", Attributes: []abci.EventAttribute{{Key: []byte("foz"), Value: []byte("2")}}},
 		},
 	}
@@ -97,15 +93,13 @@ func TestEventBusPublishEventNewBlock(t *testing.T) {
 		msg := <-blocksSub.Out()
 		edt := msg.Data().(EventDataNewBlock)
 		assert.Equal(t, block, edt.Block)
-		assert.Equal(t, resultBeginBlock, edt.ResultBeginBlock)
-		assert.Equal(t, resultEndBlock, edt.ResultEndBlock)
+		assert.Equal(t, resultDeliverBlock, edt.ResultDeliverBlock)
 		close(done)
 	}()
 
 	err = eventBus.PublishEventNewBlock(EventDataNewBlock{
-		Block:            block,
-		ResultBeginBlock: resultBeginBlock,
-		ResultEndBlock:   resultEndBlock,
+		Block:              block,
+		ResultDeliverBlock: resultDeliverBlock,
 	})
 	assert.NoError(t, err)
 
@@ -235,17 +229,12 @@ func TestEventBusPublishEventNewBlockHeader(t *testing.T) {
 	})
 
 	block := MakeBlock(0, []Tx{}, nil, []Evidence{})
-	resultBeginBlock := abci.ResponseBeginBlock{
+	resultDeliverBlock := abci.ResponseDeliverBlock{
 		Events: []abci.Event{
 			{Type: "testType", Attributes: []abci.EventAttribute{{Key: []byte("baz"), Value: []byte("1")}}},
-		},
-	}
-	resultEndBlock := abci.ResponseEndBlock{
-		Events: []abci.Event{
 			{Type: "testType", Attributes: []abci.EventAttribute{{Key: []byte("foz"), Value: []byte("2")}}},
 		},
 	}
-
 	// PublishEventNewBlockHeader adds the tm.event compositeKey, so the query below should work
 	query := "tm.event='NewBlockHeader' AND testType.baz=1 AND testType.foz=2"
 	headersSub, err := eventBus.Subscribe(context.Background(), "test", tmquery.MustParse(query))
@@ -256,15 +245,13 @@ func TestEventBusPublishEventNewBlockHeader(t *testing.T) {
 		msg := <-headersSub.Out()
 		edt := msg.Data().(EventDataNewBlockHeader)
 		assert.Equal(t, block.Header, edt.Header)
-		assert.Equal(t, resultBeginBlock, edt.ResultBeginBlock)
-		assert.Equal(t, resultEndBlock, edt.ResultEndBlock)
+		assert.Equal(t, resultDeliverBlock, edt.ResultDeliverBlock)
 		close(done)
 	}()
 
 	err = eventBus.PublishEventNewBlockHeader(EventDataNewBlockHeader{
-		Header:           block.Header,
-		ResultBeginBlock: resultBeginBlock,
-		ResultEndBlock:   resultEndBlock,
+		Header:             block.Header,
+		ResultDeliverBlock: resultDeliverBlock,
 	})
 	assert.NoError(t, err)
 

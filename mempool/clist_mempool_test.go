@@ -318,7 +318,7 @@ func TestSerialReap(t *testing.T) {
 		for i := start; i < end; i++ {
 			txBytes := make([]byte, 8)
 			binary.BigEndian.PutUint64(txBytes, uint64(i))
-			res, err := appConnCon.DeliverTxSync(abci.RequestDeliverTx{Tx: txBytes})
+			res, err := appConnCon.DeliverBlockSync(abci.RequestDeliverBlock{Txs: [][]byte{txBytes}})
 			if err != nil {
 				t.Errorf("client error committing tx: %v", err)
 			}

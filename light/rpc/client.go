@@ -343,27 +343,19 @@ func (c *Client) BlockResults(height *int64) (*ctypes.ResultBlockResults, error)
 		return nil, err
 	}
 
-	// proto-encode BeginBlock events
-	bbeBytes, err := proto.Marshal(&abci.ResponseBeginBlock{
-		Events: res.BeginBlockEvents,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	// Build a Merkle tree of proto-encoded DeliverTx results and get a hash.
 	results := types.NewResults(res.TxsResults)
 
-	// proto-encode EndBlock events.
-	ebeBytes, err := proto.Marshal(&abci.ResponseEndBlock{
-		Events: res.EndBlockEvents,
+	// proto-encode DeliverBlock events.
+	ebeBytes, err := proto.Marshal(&abci.ResponseDeliverBlock{
+		Events: res.DeliverBlockEvents,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	// Build a Merkle tree out of the above 3 binary slices.
-	rH := merkle.HashFromByteSlices([][]byte{bbeBytes, results.Hash(), ebeBytes})
+	// Build a Merkle tree out of the above 2 binary slices.
+	rH := merkle.HashFromByteSlices([][]byte{results.Hash(), ebeBytes})
 
 	// Verify block results.
 	if !bytes.Equal(rH, trustedBlock.LastResultsHash) {

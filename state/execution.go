@@ -150,7 +150,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 	fail.Fail() // XXX
 
 	// validate the validator updates and convert to tendermint types
-	abciValUpdates := abciResponses.EndBlock.ValidatorUpdates
+	abciValUpdates := abciResponses.DeliverBlock.ValidatorUpdates
 	err = validateValidatorUpdates(abciValUpdates, state.ConsensusParams.Validator)
 	if err != nil {
 		return state, 0, fmt.Errorf("error in validator updates: %v", err)
@@ -170,7 +170,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 	}
 
 	// Lock mempool, commit app state, update mempoool.
-	appHash, retainHeight, err := blockExec.Commit(state, block, abciResponses.DeliverTxs)
+	appHash, retainHeight, err := blockExec.Commit(state, block, abciResponses.DeliverBlock.Txs)
 	if err != nil {
 		return state, 0, fmt.Errorf("commit failed for application: %v", err)
 	}
@@ -291,29 +291,23 @@ func execBlockOnProxyApp(
 	if pbh == nil {
 		return nil, errors.New("nil header")
 	}
-	abciResponses.BeginBlock, err = proxyAppConn.BeginBlockSync(abci.RequestBeginBlock{
+
+	var txs = make([][]byte, 0, len(block.Txs))
+	// Run txs of block.
+	for i, tx := range block.Txs {
+		txs[i] = tx
+	}
+
+	abciResponses.DeliverBlock, err = proxyAppConn.DeliverBlockSync(abci.RequestDeliverBlock{
+		Height:              block.Height,
 		Hash:                block.Hash(),
 		Header:              *pbh,
 		LastCommitInfo:      commitInfo,
 		ByzantineValidators: byzVals,
+		Txs:                 txs,
 	})
 	if err != nil {
-		logger.Error("Error in proxyAppConn.BeginBlock", "err", err)
-		return nil, err
-	}
-
-	// Run txs of block.
-	for _, tx := range block.Txs {
-		proxyAppConn.DeliverTxAsync(abci.RequestDeliverTx{Tx: tx})
-		if err := proxyAppConn.Error(); err != nil {
-			return nil, err
-		}
-	}
-
-	// End block.
-	abciResponses.EndBlock, err = proxyAppConn.EndBlockSync(abci.RequestEndBlock{Height: block.Height})
-	if err != nil {
-		logger.Error("Error in proxyAppConn.EndBlock", "err", err)
+		logger.Error("Error in proxyAppConn.DeliverBlock", "err", err)
 		return nil, err
 	}
 
@@ -427,9 +421,9 @@ func updateState(
 	// Update the params with the latest abciResponses.
 	nextParams := state.ConsensusParams
 	lastHeightParamsChanged := state.LastHeightConsensusParamsChanged
-	if abciResponses.EndBlock.ConsensusParamUpdates != nil {
+	if abciResponses.DeliverBlock.ConsensusParamUpdates != nil {
 		// NOTE: must not mutate s.ConsensusParams
-		nextParams = types.UpdateConsensusParams(state.ConsensusParams, abciResponses.EndBlock.ConsensusParamUpdates)
+		nextParams = types.UpdateConsensusParams(state.ConsensusParams, abciResponses.DeliverBlock.ConsensusParamUpdates)
 		err := types.ValidateConsensusParams(nextParams)
 		if err != nil {
 			return state, fmt.Errorf("error updating consensus params: %v", err)
@@ -474,17 +468,15 @@ func fireEvents(
 	validatorUpdates []*types.Validator,
 ) {
 	if err := eventBus.PublishEventNewBlock(types.EventDataNewBlock{
-		Block:            block,
-		ResultBeginBlock: *abciResponses.BeginBlock,
-		ResultEndBlock:   *abciResponses.EndBlock,
+		Block:              block,
+		ResultDeliverBlock: *abciResponses.DeliverBlock,
 	}); err != nil {
 		logger.Error("Error publishing new block", "err", err)
 	}
 	if err := eventBus.PublishEventNewBlockHeader(types.EventDataNewBlockHeader{
-		Header:           block.Header,
-		NumTxs:           int64(len(block.Txs)),
-		ResultBeginBlock: *abciResponses.BeginBlock,
-		ResultEndBlock:   *abciResponses.EndBlock,
+		Header:             block.Header,
+		NumTxs:             int64(len(block.Txs)),
+		ResultDeliverBlock: *abciResponses.DeliverBlock,
 	}); err != nil {
 		logger.Error("Error publishing new block header", "err", err)
 	}
@@ -505,7 +497,7 @@ func fireEvents(
 			Height: block.Height,
 			Index:  uint32(i),
 			Tx:     tx,
-			Result: *(abciResponses.DeliverTxs[i]),
+			Result: *(abciResponses.DeliverBlock.Txs[i]),
 		}}); err != nil {
 			logger.Error("Error publishing event TX", "err", err)
 		}

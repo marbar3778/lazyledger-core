@@ -86,34 +86,38 @@ func (app *Application) Info(req types.RequestInfo) (resInfo types.ResponseInfo)
 }
 
 // tx is either "key=value" or just arbitrary bytes
-func (app *Application) DeliverTx(req types.RequestDeliverTx) types.ResponseDeliverTx {
-	var key, value []byte
-	parts := bytes.Split(req.Tx, []byte("="))
-	if len(parts) == 2 {
-		key, value = parts[0], parts[1]
-	} else {
-		key, value = req.Tx, req.Tx
-	}
+func (app *Application) DeliverBlock(req types.RequestDeliverBlock) types.ResponseDeliverBlock {
+	txs := make([]*types.ResponseDeliverTx, 0, len(req.Txs))
+	for _, tx := range req.GetTxs() {
+		var key, value []byte
+		parts := bytes.Split(tx, []byte("="))
+		if len(parts) == 2 {
+			key, value = parts[0], parts[1]
+		} else {
+			key, value = tx, tx
+		}
 
-	err := app.state.db.Set(prefixKey(key), value)
-	if err != nil {
-		panic(err)
-	}
-	app.state.Size++
+		err := app.state.db.Set(prefixKey(key), value)
+		if err != nil {
+			panic(err)
+		}
+		app.state.Size++
 
-	events := []types.Event{
-		{
-			Type: "app",
-			Attributes: []types.EventAttribute{
-				{Key: []byte("creator"), Value: []byte("Cosmoshi Netowoko"), Index: true},
-				{Key: []byte("key"), Value: key, Index: true},
-				{Key: []byte("index_key"), Value: []byte("index is working"), Index: true},
-				{Key: []byte("noindex_key"), Value: []byte("index is working"), Index: false},
+		events := []types.Event{
+			{
+				Type: "app",
+				Attributes: []types.EventAttribute{
+					{Key: []byte("creator"), Value: []byte("Cosmoshi Netowoko"), Index: true},
+					{Key: []byte("key"), Value: key, Index: true},
+					{Key: []byte("index_key"), Value: []byte("index is working"), Index: true},
+					{Key: []byte("noindex_key"), Value: []byte("index is working"), Index: false},
+				},
 			},
-		},
-	}
+		}
 
-	return types.ResponseDeliverTx{Code: code.CodeTypeOK, Events: events}
+		txs = append(txs, &types.ResponseDeliverTx{Code: code.CodeTypeOK, Events: events})
+	}
+	return types.ResponseDeliverBlock{Txs: txs}
 }
 
 func (app *Application) CheckTx(req types.RequestCheckTx) types.ResponseCheckTx {
