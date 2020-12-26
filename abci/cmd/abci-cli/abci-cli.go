@@ -491,6 +491,7 @@ func cmdInfo(cmd *cobra.Command, args []string) error {
 const codeBad uint32 = 10
 
 // Append a new tx to application
+// todo rename to finalizeBlock
 func cmdDeliverTx(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		printResponse(cmd, args, response{
@@ -503,15 +504,16 @@ func cmdDeliverTx(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	res, err := client.DeliverTxSync(types.RequestDeliverTx{Tx: txBytes})
+	res, err := client.FinalizeBlockSync(types.RequestFinalizeBlock{Txs: [][]byte{txBytes}})
 	if err != nil {
 		return err
 	}
+	txRes := res.DeliveredTxs[0]
 	printResponse(cmd, args, response{
-		Code: res.Code,
-		Data: res.Data,
-		Info: res.Info,
-		Log:  res.Log,
+		Code: txRes.Code,
+		Data: txRes.Data,
+		Info: txRes.Info,
+		Log:  txRes.Log,
 	})
 	return nil
 }

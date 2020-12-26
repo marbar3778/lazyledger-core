@@ -351,7 +351,7 @@ func (store dbStore) PruneStates(from int64, to int64) error {
 //
 // See merkle.SimpleHashFromByteSlices
 func ABCIResponsesResultsHash(ar *tmstate.ABCIResponses) []byte {
-	return types.NewResults(ar.DeliverTxs).Hash()
+	return types.NewResults(ar.FinalizeBlock.DeliveredTxs).Hash()
 }
 
 // LoadABCIResponses loads the ABCIResponses for the given height from the
@@ -391,12 +391,12 @@ func (store dbStore) LoadABCIResponses(height int64) (*tmstate.ABCIResponses, er
 func (store dbStore) SaveABCIResponses(height int64, abciResponses *tmstate.ABCIResponses) error {
 	var dtxs []*abci.ResponseDeliverTx
 	// strip nil values,
-	for _, tx := range abciResponses.DeliverTxs {
+	for _, tx := range abciResponses.FinalizeBlock.DeliveredTxs {
 		if tx != nil {
 			dtxs = append(dtxs, tx)
 		}
 	}
-	abciResponses.DeliverTxs = dtxs
+	abciResponses.FinalizeBlock.DeliveredTxs = dtxs
 
 	bz, err := abciResponses.Marshal()
 	if err != nil {

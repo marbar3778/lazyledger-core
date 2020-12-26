@@ -233,10 +233,6 @@ func (cli *socketClient) InfoAsync(req types.RequestInfo) *ReqRes {
 	return cli.queueRequest(types.ToRequestInfo(req))
 }
 
-func (cli *socketClient) DeliverTxAsync(req types.RequestDeliverTx) *ReqRes {
-	return cli.queueRequest(types.ToRequestDeliverTx(req))
-}
-
 func (cli *socketClient) CheckTxAsync(req types.RequestCheckTx) *ReqRes {
 	return cli.queueRequest(types.ToRequestCheckTx(req))
 }
@@ -253,12 +249,8 @@ func (cli *socketClient) InitChainAsync(req types.RequestInitChain) *ReqRes {
 	return cli.queueRequest(types.ToRequestInitChain(req))
 }
 
-func (cli *socketClient) BeginBlockAsync(req types.RequestBeginBlock) *ReqRes {
-	return cli.queueRequest(types.ToRequestBeginBlock(req))
-}
-
-func (cli *socketClient) EndBlockAsync(req types.RequestEndBlock) *ReqRes {
-	return cli.queueRequest(types.ToRequestEndBlock(req))
+func (cli *socketClient) FinalizeBlockAsync(req types.RequestFinalizeBlock) *ReqRes {
+	return cli.queueRequest(types.ToRequestFinalizeBlock(req))
 }
 
 func (cli *socketClient) ListSnapshotsAsync(req types.RequestListSnapshots) *ReqRes {
@@ -306,15 +298,6 @@ func (cli *socketClient) InfoSync(req types.RequestInfo) (*types.ResponseInfo, e
 	return reqres.Response.GetInfo(), cli.Error()
 }
 
-func (cli *socketClient) DeliverTxSync(req types.RequestDeliverTx) (*types.ResponseDeliverTx, error) {
-	reqres := cli.queueRequest(types.ToRequestDeliverTx(req))
-	if err := cli.FlushSync(); err != nil {
-		return nil, err
-	}
-
-	return reqres.Response.GetDeliverTx(), cli.Error()
-}
-
 func (cli *socketClient) CheckTxSync(req types.RequestCheckTx) (*types.ResponseCheckTx, error) {
 	reqres := cli.queueRequest(types.ToRequestCheckTx(req))
 	if err := cli.FlushSync(); err != nil {
@@ -351,22 +334,13 @@ func (cli *socketClient) InitChainSync(req types.RequestInitChain) (*types.Respo
 	return reqres.Response.GetInitChain(), cli.Error()
 }
 
-func (cli *socketClient) BeginBlockSync(req types.RequestBeginBlock) (*types.ResponseBeginBlock, error) {
-	reqres := cli.queueRequest(types.ToRequestBeginBlock(req))
+func (cli *socketClient) FinalizeBlockSync(req types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
+	reqres := cli.queueRequest(types.ToRequestFinalizeBlock(req))
 	if err := cli.FlushSync(); err != nil {
 		return nil, err
 	}
 
-	return reqres.Response.GetBeginBlock(), cli.Error()
-}
-
-func (cli *socketClient) EndBlockSync(req types.RequestEndBlock) (*types.ResponseEndBlock, error) {
-	reqres := cli.queueRequest(types.ToRequestEndBlock(req))
-	if err := cli.FlushSync(); err != nil {
-		return nil, err
-	}
-
-	return reqres.Response.GetEndBlock(), cli.Error()
+	return reqres.Response.GetFinalizeBlock(), cli.Error()
 }
 
 func (cli *socketClient) ListSnapshotsSync(req types.RequestListSnapshots) (*types.ResponseListSnapshots, error) {
@@ -457,8 +431,6 @@ func resMatchesReq(req *types.Request, res *types.Response) (ok bool) {
 		_, ok = res.Value.(*types.Response_Flush)
 	case *types.Request_Info:
 		_, ok = res.Value.(*types.Response_Info)
-	case *types.Request_DeliverTx:
-		_, ok = res.Value.(*types.Response_DeliverTx)
 	case *types.Request_CheckTx:
 		_, ok = res.Value.(*types.Response_CheckTx)
 	case *types.Request_Commit:
@@ -467,10 +439,8 @@ func resMatchesReq(req *types.Request, res *types.Response) (ok bool) {
 		_, ok = res.Value.(*types.Response_Query)
 	case *types.Request_InitChain:
 		_, ok = res.Value.(*types.Response_InitChain)
-	case *types.Request_BeginBlock:
-		_, ok = res.Value.(*types.Response_BeginBlock)
-	case *types.Request_EndBlock:
-		_, ok = res.Value.(*types.Response_EndBlock)
+	case *types.Request_FinalizeBlock:
+		_, ok = res.Value.(*types.Response_FinalizeBlock)
 	case *types.Request_ApplySnapshotChunk:
 		_, ok = res.Value.(*types.Response_ApplySnapshotChunk)
 	case *types.Request_LoadSnapshotChunk:

@@ -167,13 +167,12 @@ func makeHeaderPartsResponsesValPubKeyChange(
 
 	block := makeBlock(state, state.LastBlockHeight+1)
 	abciResponses := &tmstate.ABCIResponses{
-		BeginBlock: &abci.ResponseBeginBlock{},
-		EndBlock:   &abci.ResponseEndBlock{ValidatorUpdates: nil},
+		FinalizeBlock: &abci.ResponseFinalizeBlock{ValidatorUpdates: nil},
 	}
 	// If the pubkey is new, remove the old and add the new.
 	_, val := state.NextValidators.GetByIndex(0)
 	if !bytes.Equal(pubkey.Bytes(), val.PubKey.Bytes()) {
-		abciResponses.EndBlock = &abci.ResponseEndBlock{
+		abciResponses.FinalizeBlock = &abci.ResponseFinalizeBlock{
 			ValidatorUpdates: []abci.ValidatorUpdate{
 				types.TM2PB.NewValidatorUpdate(val.PubKey, 0),
 				types.TM2PB.NewValidatorUpdate(pubkey, 10),
@@ -191,14 +190,13 @@ func makeHeaderPartsResponsesValPowerChange(
 
 	block := makeBlock(state, state.LastBlockHeight+1)
 	abciResponses := &tmstate.ABCIResponses{
-		BeginBlock: &abci.ResponseBeginBlock{},
-		EndBlock:   &abci.ResponseEndBlock{ValidatorUpdates: nil},
+		FinalizeBlock: &abci.ResponseFinalizeBlock{ValidatorUpdates: nil},
 	}
 
 	// If the pubkey is new, remove the old and add the new.
 	_, val := state.NextValidators.GetByIndex(0)
 	if val.VotingPower != power {
-		abciResponses.EndBlock = &abci.ResponseEndBlock{
+		abciResponses.FinalizeBlock = &abci.ResponseFinalizeBlock{
 			ValidatorUpdates: []abci.ValidatorUpdate{
 				types.TM2PB.NewValidatorUpdate(val.PubKey, power),
 			},
@@ -215,8 +213,7 @@ func makeHeaderPartsResponsesParams(
 
 	block := makeBlock(state, state.LastBlockHeight+1)
 	abciResponses := &tmstate.ABCIResponses{
-		BeginBlock: &abci.ResponseBeginBlock{},
-		EndBlock:   &abci.ResponseEndBlock{ConsensusParamUpdates: types.TM2PB.ConsensusParams(&params)},
+		FinalizeBlock: &abci.ResponseFinalizeBlock{ConsensusParamUpdates: types.TM2PB.ConsensusParams(&params)},
 	}
 	return block.Header, types.BlockID{Hash: block.Hash(), PartSetHeader: types.PartSetHeader{}}, abciResponses
 }
@@ -254,22 +251,19 @@ func (app *testApp) Info(req abci.RequestInfo) (resInfo abci.ResponseInfo) {
 	return abci.ResponseInfo{}
 }
 
-func (app *testApp) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+func (app *testApp) FinalizeBlock(req abci.RequestFinalizeBlock) abci.ResponseFinalizeBlock {
 	app.CommitVotes = req.LastCommitInfo.Votes
 	app.ByzantineValidators = req.ByzantineValidators
-	return abci.ResponseBeginBlock{}
-}
 
-func (app *testApp) EndBlock(req abci.RequestEndBlock) abci.ResponseEndBlock {
-	return abci.ResponseEndBlock{
+	return abci.ResponseFinalizeBlock{
 		ValidatorUpdates: app.ValidatorUpdates,
 		ConsensusParamUpdates: &abci.ConsensusParams{
 			Version: &tmproto.VersionParams{
-				AppVersion: 1}}}
-}
-
-func (app *testApp) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDeliverTx {
-	return abci.ResponseDeliverTx{Events: []abci.Event{}}
+				AppVersion: 1,
+			},
+		},
+		DeliveredTxs: []*abci.ResponseDeliverTx{{Events: []abci.Event{}}},
+	}
 }
 
 func (app *testApp) CheckTx(req abci.RequestCheckTx) abci.ResponseCheckTx {

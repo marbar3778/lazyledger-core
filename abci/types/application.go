@@ -17,11 +17,11 @@ type Application interface {
 	CheckTx(RequestCheckTx) ResponseCheckTx // Validate a tx for the mempool
 
 	// Consensus Connection
-	InitChain(RequestInitChain) ResponseInitChain    // Initialize blockchain w validators/other info from TendermintCore
-	BeginBlock(RequestBeginBlock) ResponseBeginBlock // Signals the beginning of a block
-	DeliverTx(RequestDeliverTx) ResponseDeliverTx    // Deliver a tx for full processing
-	EndBlock(RequestEndBlock) ResponseEndBlock       // Signals the end of a block, returns changes to the validator set
-	Commit() ResponseCommit                          // Commit the state and return the application Merkle root hash
+	InitChain(RequestInitChain) ResponseInitChain             // Initialize blockchain w validators/other info from TendermintCore
+	FinalizeBlock(RequestFinalizeBlock) ResponseFinalizeBlock // Signals the beginning of a block
+	// Deliver a tx for full processing
+	// Signals the end of a block, returns changes to the validator set
+	Commit() ResponseCommit // Commit the state and return the application Merkle root hash
 
 	// State Sync Connection
 	ListSnapshots(RequestListSnapshots) ResponseListSnapshots                // List available snapshots
@@ -46,10 +46,6 @@ func (BaseApplication) Info(req RequestInfo) ResponseInfo {
 	return ResponseInfo{}
 }
 
-func (BaseApplication) DeliverTx(req RequestDeliverTx) ResponseDeliverTx {
-	return ResponseDeliverTx{Code: CodeTypeOK}
-}
-
 func (BaseApplication) CheckTx(req RequestCheckTx) ResponseCheckTx {
 	return ResponseCheckTx{Code: CodeTypeOK}
 }
@@ -66,12 +62,8 @@ func (BaseApplication) InitChain(req RequestInitChain) ResponseInitChain {
 	return ResponseInitChain{}
 }
 
-func (BaseApplication) BeginBlock(req RequestBeginBlock) ResponseBeginBlock {
-	return ResponseBeginBlock{}
-}
-
-func (BaseApplication) EndBlock(req RequestEndBlock) ResponseEndBlock {
-	return ResponseEndBlock{}
+func (BaseApplication) FinalizeBlock(req RequestFinalizeBlock) ResponseFinalizeBlock {
+	return ResponseFinalizeBlock{}
 }
 
 func (BaseApplication) ListSnapshots(req RequestListSnapshots) ResponseListSnapshots {
@@ -114,11 +106,6 @@ func (app *GRPCApplication) Info(ctx context.Context, req *RequestInfo) (*Respon
 	return &res, nil
 }
 
-func (app *GRPCApplication) DeliverTx(ctx context.Context, req *RequestDeliverTx) (*ResponseDeliverTx, error) {
-	res := app.app.DeliverTx(*req)
-	return &res, nil
-}
-
 func (app *GRPCApplication) CheckTx(ctx context.Context, req *RequestCheckTx) (*ResponseCheckTx, error) {
 	res := app.app.CheckTx(*req)
 	return &res, nil
@@ -139,13 +126,8 @@ func (app *GRPCApplication) InitChain(ctx context.Context, req *RequestInitChain
 	return &res, nil
 }
 
-func (app *GRPCApplication) BeginBlock(ctx context.Context, req *RequestBeginBlock) (*ResponseBeginBlock, error) {
-	res := app.app.BeginBlock(*req)
-	return &res, nil
-}
-
-func (app *GRPCApplication) EndBlock(ctx context.Context, req *RequestEndBlock) (*ResponseEndBlock, error) {
-	res := app.app.EndBlock(*req)
+func (app *GRPCApplication) FinalizeBlock(ctx context.Context, req *RequestFinalizeBlock) (*ResponseFinalizeBlock, error) {
+	res := app.app.FinalizeBlock(*req)
 	return &res, nil
 }
 

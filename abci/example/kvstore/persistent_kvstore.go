@@ -62,19 +62,19 @@ func (app *PersistentKVStoreApplication) Info(req types.RequestInfo) types.Respo
 	return res
 }
 
-// tx is either "val:pubkey!power" or "key=value" or just arbitrary bytes
-func (app *PersistentKVStoreApplication) DeliverTx(req types.RequestDeliverTx) types.ResponseDeliverTx {
-	// if it starts with "val:", update the validator set
-	// format is "val:pubkey!power"
-	if isValidatorTx(req.Tx) {
-		// update validators in the merkle tree
-		// and in app.ValUpdates
-		return app.execValidatorTx(req.Tx)
-	}
+// // tx is either "val:pubkey!power" or "key=value" or just arbitrary bytes
+// func (app *PersistentKVStoreApplication) DeliverTx(req types.RequestDeliverTx) types.ResponseDeliverTx {
+// 	// if it starts with "val:", update the validator set
+// 	// format is "val:pubkey!power"
+// 	if isValidatorTx(req.Tx) {
+// 		// update validators in the merkle tree
+// 		// and in app.ValUpdates
+// 		return app.execValidatorTx(req.Tx)
+// 	}
 
-	// otherwise, update the key-value store
-	return app.app.DeliverTx(req)
-}
+// 	// otherwise, update the key-value store
+// 	return app.app.DeliverTx(req)
+// }
 
 func (app *PersistentKVStoreApplication) CheckTx(req types.RequestCheckTx) types.ResponseCheckTx {
 	return app.app.CheckTx(req)
@@ -116,7 +116,7 @@ func (app *PersistentKVStoreApplication) InitChain(req types.RequestInitChain) t
 }
 
 // Track the block hash and header information
-func (app *PersistentKVStoreApplication) BeginBlock(req types.RequestBeginBlock) types.ResponseBeginBlock {
+func (app *PersistentKVStoreApplication) FinalizeBlock(req types.RequestFinalizeBlock) types.ResponseFinalizeBlock {
 	// reset valset changes
 	app.ValUpdates = make([]types.ValidatorUpdate, 0)
 
@@ -138,13 +138,29 @@ func (app *PersistentKVStoreApplication) BeginBlock(req types.RequestBeginBlock)
 		}
 	}
 
-	return types.ResponseBeginBlock{}
+	var txs []*types.ResponseDeliverTx
+	// if it starts with "val:", update the validator set
+	// format is "val:pubkey!power"
+	for _, tx := range req.Txs {
+		if isValidatorTx(tx) {
+			// update validators in the merkle tree
+			// and in app.ValUpdates
+			execTx := app.execValidatorTx(tx)
+			txs = append(txs, &execTx)
+		} else {
+
+			// otherwise, update the key-value store
+			delTx := app.app.DeliverTx(tx)
+			txs = append(txs, &delTx)
+		}
+	}
+
+	return types.ResponseFinalizeBlock{
+		ValidatorUpdates: app.ValUpdates, // Update the validator set
+		DeliveredTxs:     txs}
 }
 
 // Update the validator set
-func (app *PersistentKVStoreApplication) EndBlock(req types.RequestEndBlock) types.ResponseEndBlock {
-	return types.ResponseEndBlock{ValidatorUpdates: app.ValUpdates}
-}
 
 func (app *PersistentKVStoreApplication) ListSnapshots(
 	req types.RequestListSnapshots) types.ResponseListSnapshots {

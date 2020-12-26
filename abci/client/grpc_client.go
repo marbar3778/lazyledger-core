@@ -153,15 +153,6 @@ func (cli *grpcClient) InfoAsync(params types.RequestInfo) *ReqRes {
 	return cli.finishAsyncCall(req, &types.Response{Value: &types.Response_Info{Info: res}})
 }
 
-func (cli *grpcClient) DeliverTxAsync(params types.RequestDeliverTx) *ReqRes {
-	req := types.ToRequestDeliverTx(params)
-	res, err := cli.client.DeliverTx(context.Background(), req.GetDeliverTx(), grpc.WaitForReady(true))
-	if err != nil {
-		cli.StopForError(err)
-	}
-	return cli.finishAsyncCall(req, &types.Response{Value: &types.Response_DeliverTx{DeliverTx: res}})
-}
-
 func (cli *grpcClient) CheckTxAsync(params types.RequestCheckTx) *ReqRes {
 	req := types.ToRequestCheckTx(params)
 	res, err := cli.client.CheckTx(context.Background(), req.GetCheckTx(), grpc.WaitForReady(true))
@@ -198,22 +189,13 @@ func (cli *grpcClient) InitChainAsync(params types.RequestInitChain) *ReqRes {
 	return cli.finishAsyncCall(req, &types.Response{Value: &types.Response_InitChain{InitChain: res}})
 }
 
-func (cli *grpcClient) BeginBlockAsync(params types.RequestBeginBlock) *ReqRes {
-	req := types.ToRequestBeginBlock(params)
-	res, err := cli.client.BeginBlock(context.Background(), req.GetBeginBlock(), grpc.WaitForReady(true))
+func (cli *grpcClient) FinalizeBlockAsync(params types.RequestFinalizeBlock) *ReqRes {
+	req := types.ToRequestFinalizeBlock(params)
+	res, err := cli.client.FinalizeBlock(context.Background(), req.GetFinalizeBlock(), grpc.WaitForReady(true))
 	if err != nil {
 		cli.StopForError(err)
 	}
-	return cli.finishAsyncCall(req, &types.Response{Value: &types.Response_BeginBlock{BeginBlock: res}})
-}
-
-func (cli *grpcClient) EndBlockAsync(params types.RequestEndBlock) *ReqRes {
-	req := types.ToRequestEndBlock(params)
-	res, err := cli.client.EndBlock(context.Background(), req.GetEndBlock(), grpc.WaitForReady(true))
-	if err != nil {
-		cli.StopForError(err)
-	}
-	return cli.finishAsyncCall(req, &types.Response{Value: &types.Response_EndBlock{EndBlock: res}})
+	return cli.finishAsyncCall(req, &types.Response{Value: &types.Response_FinalizeBlock{FinalizeBlock: res}})
 }
 
 func (cli *grpcClient) ListSnapshotsAsync(params types.RequestListSnapshots) *ReqRes {
@@ -294,11 +276,6 @@ func (cli *grpcClient) InfoSync(req types.RequestInfo) (*types.ResponseInfo, err
 	return reqres.Response.GetInfo(), cli.Error()
 }
 
-func (cli *grpcClient) DeliverTxSync(params types.RequestDeliverTx) (*types.ResponseDeliverTx, error) {
-	reqres := cli.DeliverTxAsync(params)
-	return reqres.Response.GetDeliverTx(), cli.Error()
-}
-
 func (cli *grpcClient) CheckTxSync(params types.RequestCheckTx) (*types.ResponseCheckTx, error) {
 	reqres := cli.CheckTxAsync(params)
 	return reqres.Response.GetCheckTx(), cli.Error()
@@ -319,14 +296,9 @@ func (cli *grpcClient) InitChainSync(params types.RequestInitChain) (*types.Resp
 	return reqres.Response.GetInitChain(), cli.Error()
 }
 
-func (cli *grpcClient) BeginBlockSync(params types.RequestBeginBlock) (*types.ResponseBeginBlock, error) {
-	reqres := cli.BeginBlockAsync(params)
-	return reqres.Response.GetBeginBlock(), cli.Error()
-}
-
-func (cli *grpcClient) EndBlockSync(params types.RequestEndBlock) (*types.ResponseEndBlock, error) {
-	reqres := cli.EndBlockAsync(params)
-	return reqres.Response.GetEndBlock(), cli.Error()
+func (cli *grpcClient) FinalizeBlockSync(params types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
+	reqres := cli.FinalizeBlockAsync(params)
+	return reqres.Response.GetFinalizeBlock(), cli.Error()
 }
 
 func (cli *grpcClient) ListSnapshotsSync(params types.RequestListSnapshots) (*types.ResponseListSnapshots, error) {

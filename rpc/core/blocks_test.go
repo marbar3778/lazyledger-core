@@ -71,13 +71,13 @@ func TestBlockchainInfo(t *testing.T) {
 
 func TestBlockResults(t *testing.T) {
 	results := &tmstate.ABCIResponses{
-		DeliverTxs: []*abci.ResponseDeliverTx{
-			{Code: 0, Data: []byte{0x01}, Log: "ok"},
-			{Code: 0, Data: []byte{0x02}, Log: "ok"},
-			{Code: 1, Log: "not ok"},
+		FinalizeBlock: &abci.ResponseFinalizeBlock{
+			DeliveredTxs: []*abci.ResponseDeliverTx{
+				{Code: 0, Data: []byte{0x01}, Log: "ok"},
+				{Code: 0, Data: []byte{0x02}, Log: "ok"},
+				{Code: 1, Log: "not ok"},
+			},
 		},
-		EndBlock:   &abci.ResponseEndBlock{},
-		BeginBlock: &abci.ResponseBeginBlock{},
 	}
 
 	env = &Environment{}
@@ -96,11 +96,10 @@ func TestBlockResults(t *testing.T) {
 		{101, true, nil},
 		{100, false, &ctypes.ResultBlockResults{
 			Height:                100,
-			TxsResults:            results.DeliverTxs,
-			BeginBlockEvents:      results.BeginBlock.Events,
-			EndBlockEvents:        results.EndBlock.Events,
-			ValidatorUpdates:      results.EndBlock.ValidatorUpdates,
-			ConsensusParamUpdates: results.EndBlock.ConsensusParamUpdates,
+			TxsResults:            results.FinalizeBlock.DeliveredTxs,
+			FinalizeBlockEvents:   results.FinalizeBlock.Events,
+			ValidatorUpdates:      results.FinalizeBlock.ValidatorUpdates,
+			ConsensusParamUpdates: results.FinalizeBlock.ConsensusParamUpdates,
 		}},
 	}
 

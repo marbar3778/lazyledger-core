@@ -46,9 +46,11 @@ func Commit(client abcicli.Client, hashExp []byte) error {
 	return nil
 }
 
+// todo rename to finalize block
 func DeliverTx(client abcicli.Client, txBytes []byte, codeExp uint32, dataExp []byte) error {
-	res, _ := client.DeliverTxSync(types.RequestDeliverTx{Tx: txBytes})
-	code, data, log := res.Code, res.Data, res.Log
+	res, _ := client.FinalizeBlockSync(types.RequestFinalizeBlock{Txs: [][]byte{txBytes}})
+	txRes := res.DeliveredTxs[0]
+	code, data, log := txRes.Code, txRes.Data, txRes.Log
 	if code != codeExp {
 		fmt.Println("Failed test: DeliverTx")
 		fmt.Printf("DeliverTx response code was unexpected. Got %v expected %v. Log: %v\n",

@@ -24,12 +24,12 @@ const (
 )
 
 func testKVStore(t *testing.T, app types.Application, tx []byte, key, value string) {
-	req := types.RequestDeliverTx{Tx: tx}
-	ar := app.DeliverTx(req)
-	require.False(t, ar.IsErr(), ar)
+	req := types.RequestFinalizeBlock{Txs: [][]byte{tx}}
+	ar := app.FinalizeBlock(req)
+	require.False(t, ar.DeliveredTxs[0].IsErr(), ar)
 	// repeating tx doesn't raise error
-	ar = app.DeliverTx(req)
-	require.False(t, ar.IsErr(), ar)
+	ar = app.FinalizeBlock(req)
+	require.False(t, ar.DeliveredTxs[0].IsErr(), ar)
 	// commit
 	app.Commit()
 
@@ -106,8 +106,7 @@ func TestPersistentKVStoreInfo(t *testing.T) {
 	header := tmproto.Header{
 		Height: height,
 	}
-	kvstore.BeginBlock(types.RequestBeginBlock{Hash: hash, Header: header})
-	kvstore.EndBlock(types.RequestEndBlock{Height: header.Height})
+	kvstore.FinalizeBlock(types.RequestFinalizeBlock{Hash: hash, Header: header})
 	kvstore.Commit()
 
 	resInfo = kvstore.Info(types.RequestInfo{})
@@ -196,17 +195,11 @@ func makeApplyBlock(
 	header := tmproto.Header{
 		Height: height,
 	}
-
-	kvstore.BeginBlock(types.RequestBeginBlock{Hash: hash, Header: header})
-	for _, tx := range txs {
-		if r := kvstore.DeliverTx(types.RequestDeliverTx{Tx: tx}); r.IsErr() {
-			t.Fatal(r)
-		}
-	}
-	resEndBlock := kvstore.EndBlock(types.RequestEndBlock{Height: header.Height})
+	res := kvstore.FinalizeBlock(types.RequestFinalizeBlock{
+		Hash: hash, Header: header, Txs: txs})
 	kvstore.Commit()
 
-	valsEqual(t, diff, resEndBlock.ValidatorUpdates)
+	valsEqual(t, diff, res.ValidatorUpdates)
 
 }
 
@@ -323,13 +316,14 @@ func runClientTests(t *testing.T, client abcicli.Client) {
 }
 
 func testClient(t *testing.T, app abcicli.Client, tx []byte, key, value string) {
-	ar, err := app.DeliverTxSync(types.RequestDeliverTx{Tx: tx})
+	req := types.RequestFinalizeBlock{Txs: [][]byte{tx}}
+	ar, err := app.FinalizeBlockSync(req)
 	require.NoError(t, err)
-	require.False(t, ar.IsErr(), ar)
+	require.False(t, ar.DeliveredTxs[0].IsErr(), ar)
 	// repeating tx doesn't raise error
-	ar, err = app.DeliverTxSync(types.RequestDeliverTx{Tx: tx})
+	ar, err = app.FinalizeBlockSync(req)
 	require.NoError(t, err)
-	require.False(t, ar.IsErr(), ar)
+	require.False(t, ar.DeliveredTxs[0].IsErr(), ar)
 	// commit
 	_, err = app.CommitSync()
 	require.NoError(t, err)

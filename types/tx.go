@@ -29,6 +29,18 @@ func (tx Tx) String() string {
 // Txs is a slice of Tx.
 type Txs []Tx
 
+// ToByte returns all transactions as [][]byte.
+// todo: work on tendermint to remove this.
+func (txs Txs) ToByte() [][]byte {
+	txBzs := make([][]byte, 0, len(txs))
+
+	for i := 0; i < len(txs); i++ {
+		txBzs = append(txBzs, txs[i])
+	}
+
+	return txBzs
+}
+
 // Hash returns the Merkle root hash of the transaction hashes.
 // i.e. the leaves of the tree are the hashes of the txs.
 func (txs Txs) Hash() []byte {

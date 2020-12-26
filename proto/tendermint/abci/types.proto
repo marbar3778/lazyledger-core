@@ -26,15 +26,13 @@ message Request {
     RequestInfo               info                 = 3;
     RequestInitChain          init_chain           = 4;
     RequestQuery              query                = 5;
-    RequestBeginBlock         begin_block          = 6;
     RequestCheckTx            check_tx             = 7;
-    RequestDeliverTx          deliver_tx           = 8;
-    RequestEndBlock           end_block            = 9;
     RequestCommit             commit               = 10;
     RequestListSnapshots      list_snapshots       = 11;
     RequestOfferSnapshot      offer_snapshot       = 12;
     RequestLoadSnapshotChunk  load_snapshot_chunk  = 13;
     RequestApplySnapshotChunk apply_snapshot_chunk = 14;
+    RequestFinalizeBlock      finalize_block       = 15;
   }
 }
 
@@ -65,6 +63,14 @@ message RequestQuery {
   string path   = 2;
   int64  height = 3;
   bool   prove  = 4;
+}
+
+message RequestFinalizeBlock {
+  bytes                   hash                 = 1;
+  tendermint.types.Header header               = 2 [(gogoproto.nullable) = false];
+  LastCommitInfo          last_commit_info     = 3 [(gogoproto.nullable) = false];
+  repeated Evidence       byzantine_validators = 4 [(gogoproto.nullable) = false];
+  repeated bytes          txs                  = 5;
 }
 
 message RequestBeginBlock {
@@ -129,15 +135,13 @@ message Response {
     ResponseInfo               info                 = 4;
     ResponseInitChain          init_chain           = 5;
     ResponseQuery              query                = 6;
-    ResponseBeginBlock         begin_block          = 7;
     ResponseCheckTx            check_tx             = 8;
-    ResponseDeliverTx          deliver_tx           = 9;
-    ResponseEndBlock           end_block            = 10;
     ResponseCommit             commit               = 11;
     ResponseListSnapshots      list_snapshots       = 12;
     ResponseOfferSnapshot      offer_snapshot       = 13;
     ResponseLoadSnapshotChunk  load_snapshot_chunk  = 14;
     ResponseApplySnapshotChunk apply_snapshot_chunk = 15;
+    ResponseFinalizeBlock      finalize_block       = 16;
   }
 }
 
@@ -179,6 +183,13 @@ message ResponseQuery {
   tendermint.crypto.ProofOps proof_ops = 8;
   int64                      height    = 9;
   string                     codespace = 10;
+}
+
+message ResponseFinalizeBlock {
+  repeated Event             events                  = 1 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
+  repeated ResponseDeliverTx delivered_txs           = 2;
+  repeated ValidatorUpdate   validator_updates       = 3 [(gogoproto.nullable) = false];
+  ConsensusParams            consensus_param_updates = 4;
 }
 
 message ResponseBeginBlock {
@@ -376,15 +387,13 @@ service ABCIApplication {
   rpc Echo(RequestEcho) returns (ResponseEcho);
   rpc Flush(RequestFlush) returns (ResponseFlush);
   rpc Info(RequestInfo) returns (ResponseInfo);
-  rpc DeliverTx(RequestDeliverTx) returns (ResponseDeliverTx);
   rpc CheckTx(RequestCheckTx) returns (ResponseCheckTx);
   rpc Query(RequestQuery) returns (ResponseQuery);
-  rpc Commit(RequestCommit) returns (ResponseCommit);
   rpc InitChain(RequestInitChain) returns (ResponseInitChain);
-  rpc BeginBlock(RequestBeginBlock) returns (ResponseBeginBlock);
-  rpc EndBlock(RequestEndBlock) returns (ResponseEndBlock);
+  rpc Commit(RequestCommit) returns (ResponseCommit);
   rpc ListSnapshots(RequestListSnapshots) returns (ResponseListSnapshots);
   rpc OfferSnapshot(RequestOfferSnapshot) returns (ResponseOfferSnapshot);
   rpc LoadSnapshotChunk(RequestLoadSnapshotChunk) returns (ResponseLoadSnapshotChunk);
   rpc ApplySnapshotChunk(RequestApplySnapshotChunk) returns (ResponseApplySnapshotChunk);
+  rpc FinalizeBlock(RequestFinalizeBlock) returns (ResponseFinalizeBlock);
 }

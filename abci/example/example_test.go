@@ -79,14 +79,18 @@ func testStream(t *testing.T, app types.Application) {
 	client.SetResponseCallback(func(req *types.Request, res *types.Response) {
 		// Process response
 		switch r := res.Value.(type) {
-		case *types.Response_DeliverTx:
+		case *types.Response_FinalizeBlock:
 			counter++
-			if r.DeliverTx.Code != code.CodeTypeOK {
-				t.Error("DeliverTx failed with ret_code", r.DeliverTx.Code)
+
+			for _, tx := range r.FinalizeBlock.DeliveredTxs {
+				if tx.Code != code.CodeTypeOK {
+					t.Error("DeliverTx failed with ret_code", tx.Code)
+				}
+				if counter > numDeliverTxs {
+					t.Fatalf("Too many DeliverTx responses. Got %d, expected %d", counter, numDeliverTxs)
+				}
 			}
-			if counter > numDeliverTxs {
-				t.Fatalf("Too many DeliverTx responses. Got %d, expected %d", counter, numDeliverTxs)
-			}
+
 			if counter == numDeliverTxs {
 				go func() {
 					time.Sleep(time.Second * 1) // Wait for a bit to allow counter overflow
@@ -104,7 +108,7 @@ func testStream(t *testing.T, app types.Application) {
 	// Write requests
 	for counter := 0; counter < numDeliverTxs; counter++ {
 		// Send request
-		reqRes := client.DeliverTxAsync(types.RequestDeliverTx{Tx: []byte("test")})
+		reqRes := client.FinalizeBlockAsync(types.RequestFinalizeBlock{Txs: [][]byte{[]byte("test")}})
 		_ = reqRes
 		// check err ?
 
@@ -164,16 +168,18 @@ func testGRPCSync(t *testing.T, app types.ABCIApplicationServer) {
 	// Write requests
 	for counter := 0; counter < numDeliverTxs; counter++ {
 		// Send request
-		response, err := client.DeliverTx(context.Background(), &types.RequestDeliverTx{Tx: []byte("test")})
+		response, err := client.FinalizeBlock(context.Background(), &types.RequestFinalizeBlock{Txs: [][]byte{[]byte("test")}}) //todo should we batch or send individually
 		if err != nil {
 			t.Fatalf("Error in GRPC DeliverTx: %v", err.Error())
 		}
 		counter++
-		if response.Code != code.CodeTypeOK {
-			t.Error("DeliverTx failed with ret_code", response.Code)
-		}
-		if counter > numDeliverTxs {
-			t.Fatal("Too many DeliverTx responses")
+		for _, tx := range response.DeliveredTxs {
+			if tx.Code != code.CodeTypeOK {
+				t.Error("DeliverTx failed with ret_code", tx.Code)
+			}
+			if counter > numDeliverTxs {
+				t.Fatal("Too many DeliverTx responses")
+			}
 		}
 		t.Log("response", counter)
 		if counter == numDeliverTxs {

@@ -35,16 +35,18 @@ func commit(client abcicli.Client, hashExp []byte) {
 	}
 }
 
+// todo rename to finalizeBlock
 func deliverTx(client abcicli.Client, txBytes []byte, codeExp uint32, dataExp []byte) {
-	res, err := client.DeliverTxSync(types.RequestDeliverTx{Tx: txBytes})
+	res, err := client.FinalizeBlockSync(types.RequestFinalizeBlock{Txs: [][]byte{txBytes}})
 	if err != nil {
 		panicf("client error: %v", err)
 	}
-	if res.Code != codeExp {
-		panicf("DeliverTx response code was unexpected. Got %v expected %v. Log: %v", res.Code, codeExp, res.Log)
+	txRes := res.DeliveredTxs[0]
+	if txRes.Code != codeExp {
+		panicf("DeliverTx response code was unexpected. Got %v expected %v. Log: %v", txRes.Code, codeExp, txRes.Log)
 	}
-	if !bytes.Equal(res.Data, dataExp) {
-		panicf("DeliverTx response data was unexpected. Got %X expected %X", res.Data, dataExp)
+	if !bytes.Equal(txRes.Data, dataExp) {
+		panicf("DeliverTx response data was unexpected. Got %X expected %X", txRes.Data, dataExp)
 	}
 }
 

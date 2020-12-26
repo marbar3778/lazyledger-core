@@ -76,13 +76,9 @@ func TestEventBusPublishEventNewBlock(t *testing.T) {
 	})
 
 	block := MakeBlock(0, []Tx{}, []Evidence{}, nil, nil, nil)
-	resultBeginBlock := abci.ResponseBeginBlock{
+	resultFinalizeBlock := abci.ResponseFinalizeBlock{
 		Events: []abci.Event{
 			{Type: "testType", Attributes: []abci.EventAttribute{{Key: []byte("baz"), Value: []byte("1")}}},
-		},
-	}
-	resultEndBlock := abci.ResponseEndBlock{
-		Events: []abci.Event{
 			{Type: "testType", Attributes: []abci.EventAttribute{{Key: []byte("foz"), Value: []byte("2")}}},
 		},
 	}
@@ -97,15 +93,13 @@ func TestEventBusPublishEventNewBlock(t *testing.T) {
 		msg := <-blocksSub.Out()
 		edt := msg.Data().(EventDataNewBlock)
 		assert.Equal(t, block, edt.Block)
-		assert.Equal(t, resultBeginBlock, edt.ResultBeginBlock)
-		assert.Equal(t, resultEndBlock, edt.ResultEndBlock)
+		assert.Equal(t, resultFinalizeBlock, edt.ResultFinalizeBlock)
 		close(done)
 	}()
 
 	err = eventBus.PublishEventNewBlock(EventDataNewBlock{
-		Block:            block,
-		ResultBeginBlock: resultBeginBlock,
-		ResultEndBlock:   resultEndBlock,
+		Block:               block,
+		ResultFinalizeBlock: resultFinalizeBlock,
 	})
 	assert.NoError(t, err)
 
@@ -235,13 +229,9 @@ func TestEventBusPublishEventNewBlockHeader(t *testing.T) {
 	})
 
 	block := MakeBlock(0, []Tx{}, []Evidence{}, nil, nil, nil)
-	resultBeginBlock := abci.ResponseBeginBlock{
+	resultFinalizeBlock := abci.ResponseFinalizeBlock{
 		Events: []abci.Event{
 			{Type: "testType", Attributes: []abci.EventAttribute{{Key: []byte("baz"), Value: []byte("1")}}},
-		},
-	}
-	resultEndBlock := abci.ResponseEndBlock{
-		Events: []abci.Event{
 			{Type: "testType", Attributes: []abci.EventAttribute{{Key: []byte("foz"), Value: []byte("2")}}},
 		},
 	}
@@ -256,15 +246,13 @@ func TestEventBusPublishEventNewBlockHeader(t *testing.T) {
 		msg := <-headersSub.Out()
 		edt := msg.Data().(EventDataNewBlockHeader)
 		assert.Equal(t, block.Header, edt.Header)
-		assert.Equal(t, resultBeginBlock, edt.ResultBeginBlock)
-		assert.Equal(t, resultEndBlock, edt.ResultEndBlock)
+		assert.Equal(t, resultFinalizeBlock, edt.ResultFinalizeBlock)
 		close(done)
 	}()
 
 	err = eventBus.PublishEventNewBlockHeader(EventDataNewBlockHeader{
-		Header:           block.Header,
-		ResultBeginBlock: resultBeginBlock,
-		ResultEndBlock:   resultEndBlock,
+		Header:              block.Header,
+		ResultFinalizeBlock: resultFinalizeBlock,
 	})
 	assert.NoError(t, err)
 
