@@ -240,7 +240,6 @@ func (blockExec *BlockExecutor) ApplyBlock(
 	}
 
 	fail.Fail() // XXX
-	fmt.Println(abciResponses.FinalizeBlock, "hahah")
 	// Events are fired after everything else.
 	// NOTE: if we crash between Commit and Save, events wont be fired during replay
 	fireEvents(blockExec.logger, blockExec.eventBus, block, abciResponses, validatorUpdates)
@@ -322,8 +321,7 @@ func execBlockOnProxyApp(
 	}
 
 	commitInfo := getBeginBlockValidatorInfo(block, store, initialHeight)
-
-	byzVals := make([]abci.Evidence, 0)
+	byzVals := make([]abci.Evidence, 0, len(block.Evidence.Evidence))
 	for _, evidence := range block.Evidence.Evidence {
 		byzVals = append(byzVals, evidence.ABCI()...)
 	}
@@ -336,6 +334,7 @@ func execBlockOnProxyApp(
 	if pbh == nil {
 		return nil, errors.New("nil header")
 	}
+
 	abciResponses.FinalizeBlock, err = proxyAppConn.FinalizeBlockSync(ctx, abci.RequestFinalizeBlock{
 		Hash:                block.Hash(),
 		Header:              *pbh,
@@ -343,12 +342,12 @@ func execBlockOnProxyApp(
 		ByzantineValidators: byzVals,
 		Txs:                 block.Txs.ToByte(),
 	})
+
 	if err != nil {
 		logger.Error("Error in proxyAppConn.FinalizeBlock", "err", err)
 		return nil, err
 	}
 
-	fmt.Println(abciResponses.FinalizeBlock)
 	for _, tx := range abciResponses.FinalizeBlock.DeliveredTxs {
 		if tx.Code == abci.CodeTypeOK {
 			validTxs++
@@ -526,11 +525,11 @@ func fireEvents(
 			}
 		}
 	}
-	for i, tx := range block.Data.Txs {
+	for i, tx := range abciResponses.FinalizeBlock.DeliveredTxs { //todo should loop over the block txs
 		if err := eventBus.PublishEventTx(types.EventDataTx{TxResult: abci.TxResult{
 			Height: block.Height,
 			Index:  uint32(i),
-			Tx:     tx,
+			Tx:     tx.Data,
 			Result: *(abciResponses.FinalizeBlock.DeliveredTxs[i]),
 		}}); err != nil {
 			logger.Error("Error publishing event TX", "err", err)

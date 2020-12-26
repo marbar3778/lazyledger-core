@@ -105,7 +105,9 @@ func TestABCIResponsesSaveLoad1(t *testing.T) {
 
 	abciResponses := new(tmstate.ABCIResponses)
 	dtxs := make([]*abci.ResponseDeliverTx, 2)
-	abciResponses.FinalizeBlock.DeliveredTxs = dtxs
+	abciResponses.FinalizeBlock = &abci.ResponseFinalizeBlock{
+		DeliveredTxs: dtxs,
+	}
 
 	abciResponses.FinalizeBlock.DeliveredTxs[0] = &abci.ResponseDeliverTx{Data: []byte("foo"), Events: nil}
 	abciResponses.FinalizeBlock.DeliveredTxs[1] = &abci.ResponseDeliverTx{Data: []byte("bar"), Log: "ok", Events: nil}
