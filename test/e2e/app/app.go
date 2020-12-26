@@ -86,21 +86,11 @@ func (app *Application) CheckTx(req abci.RequestCheckTx) abci.ResponseCheckTx {
 	return abci.ResponseCheckTx{Code: code.CodeTypeOK, GasWanted: 1}
 }
 
-// DeliverTx implements ABCI.
-func (app *Application) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDeliverTx {
-	key, value, err := parseTx(req.Tx)
-	if err != nil {
-		panic(err) // shouldn't happen since we verified it in CheckTx
-	}
-	app.state.Set(key, value)
-	return abci.ResponseDeliverTx{Code: code.CodeTypeOK}
-}
-
-// EndBlock implements ABCI.
-func (app *Application) EndBlock(req abci.RequestEndBlock) abci.ResponseEndBlock {
+// FinalizeBlock implements ABCI.
+func (app *Application) FinalizeBlock(req abci.RequestFinalizeBlock) abci.ResponseFinalizeBlock {
 	var err error
-	resp := abci.ResponseEndBlock{}
-	if resp.ValidatorUpdates, err = app.validatorUpdates(uint64(req.Height)); err != nil {
+	resp := abci.ResponseFinalizeBlock{}
+	if resp.ValidatorUpdates, err = app.validatorUpdates(uint64(req.Header.Height)); err != nil {
 		panic(err)
 	}
 	return resp
@@ -187,19 +177,27 @@ func (app *Application) ApplySnapshotChunk(req abci.RequestApplySnapshotChunk) a
 	return abci.ResponseApplySnapshotChunk{Result: abci.ResponseApplySnapshotChunk_ACCEPT}
 }
 
+// PreprocessTxs implements ABCI
+func (app *Application) PreprocessTxs(
+	req abci.RequestPreprocessTxs) abci.ResponsePreprocessTxs {
+	return abci.ResponsePreprocessTxs{Txs: req.Txs}
+}
+
 // validatorUpdates generates a validator set update.
 func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, error) {
 	updates := app.cfg.ValidatorUpdates[fmt.Sprintf("%v", height)]
 	if len(updates) == 0 {
 		return nil, nil
 	}
+
 	valUpdates := abci.ValidatorUpdates{}
 	for keyString, power := range updates {
+
 		keyBytes, err := base64.StdEncoding.DecodeString(keyString)
 		if err != nil {
 			return nil, fmt.Errorf("invalid base64 pubkey value %q: %w", keyString, err)
 		}
-		valUpdates = append(valUpdates, abci.Ed25519ValidatorUpdate(keyBytes, int64(power)))
+		valUpdates = append(valUpdates, abci.UpdateValidator(keyBytes, int64(power), app.cfg.KeyType))
 	}
 	return valUpdates, nil
 }

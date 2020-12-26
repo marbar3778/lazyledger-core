@@ -75,7 +75,7 @@ func TestEventBusPublishEventNewBlock(t *testing.T) {
 		}
 	})
 
-	block := MakeBlock(0, []Tx{}, []Evidence{}, nil, nil, nil)
+	block := MakeBlock(0, []Tx{}, []Evidence{}, nil, Messages{}, nil)
 	resultFinalizeBlock := abci.ResponseFinalizeBlock{
 		Events: []abci.Event{
 			{Type: "testType", Attributes: []abci.EventAttribute{{Key: []byte("baz"), Value: []byte("1")}}},
@@ -228,7 +228,7 @@ func TestEventBusPublishEventNewBlockHeader(t *testing.T) {
 		}
 	})
 
-	block := MakeBlock(0, []Tx{}, []Evidence{}, nil, nil, nil)
+	block := MakeBlock(0, []Tx{}, []Evidence{}, nil, Messages{}, nil)
 	resultFinalizeBlock := abci.ResponseFinalizeBlock{
 		Events: []abci.Event{
 			{Type: "testType", Attributes: []abci.EventAttribute{{Key: []byte("baz"), Value: []byte("1")}}},

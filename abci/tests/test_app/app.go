@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 
@@ -9,6 +10,8 @@ import (
 	"github.com/lazyledger/lazyledger-core/abci/types"
 	"github.com/lazyledger/lazyledger-core/libs/log"
 )
+
+var ctx = context.Background()
 
 func startClient(abciType string) abcicli.Client {
 	// Start client
@@ -26,7 +29,7 @@ func startClient(abciType string) abcicli.Client {
 }
 
 func commit(client abcicli.Client, hashExp []byte) {
-	res, err := client.CommitSync()
+	res, err := client.CommitSync(ctx)
 	if err != nil {
 		panicf("client error: %v", err)
 	}
@@ -37,7 +40,7 @@ func commit(client abcicli.Client, hashExp []byte) {
 
 // todo rename to finalizeBlock
 func deliverTx(client abcicli.Client, txBytes []byte, codeExp uint32, dataExp []byte) {
-	res, err := client.FinalizeBlockSync(types.RequestFinalizeBlock{Txs: [][]byte{txBytes}})
+	res, err := client.FinalizeBlockSync(ctx, types.RequestFinalizeBlock{Txs: [][]byte{txBytes}})
 	if err != nil {
 		panicf("client error: %v", err)
 	}

@@ -1,6 +1,7 @@
 package kvstore
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"sort"
@@ -22,6 +23,8 @@ const (
 	testKey   = "abc"
 	testValue = "def"
 )
+
+var ctx = context.Background()
 
 func testKVStore(t *testing.T, app types.Application, tx []byte, key, value string) {
 	req := types.RequestFinalizeBlock{Txs: [][]byte{tx}}
@@ -317,23 +320,23 @@ func runClientTests(t *testing.T, client abcicli.Client) {
 
 func testClient(t *testing.T, app abcicli.Client, tx []byte, key, value string) {
 	req := types.RequestFinalizeBlock{Txs: [][]byte{tx}}
-	ar, err := app.FinalizeBlockSync(req)
+	ar, err := app.FinalizeBlockSync(ctx, req)
 	require.NoError(t, err)
 	require.False(t, ar.DeliveredTxs[0].IsErr(), ar)
 	// repeating tx doesn't raise error
-	ar, err = app.FinalizeBlockSync(req)
+	ar, err = app.FinalizeBlockSync(ctx, req)
 	require.NoError(t, err)
 	require.False(t, ar.DeliveredTxs[0].IsErr(), ar)
 	// commit
-	_, err = app.CommitSync()
+	_, err = app.CommitSync(ctx)
 	require.NoError(t, err)
 
-	info, err := app.InfoSync(types.RequestInfo{})
+	info, err := app.InfoSync(ctx, types.RequestInfo{})
 	require.NoError(t, err)
 	require.NotZero(t, info.LastBlockHeight)
 
 	// make sure query is fine
-	resQuery, err := app.QuerySync(types.RequestQuery{
+	resQuery, err := app.QuerySync(ctx, types.RequestQuery{
 		Path: "/store",
 		Data: []byte(key),
 	})
@@ -344,7 +347,7 @@ func testClient(t *testing.T, app abcicli.Client, tx []byte, key, value string) 
 	require.EqualValues(t, info.LastBlockHeight, resQuery.Height)
 
 	// make sure proof is fine
-	resQuery, err = app.QuerySync(types.RequestQuery{
+	resQuery, err = app.QuerySync(ctx, types.RequestQuery{
 		Path:  "/store",
 		Data:  []byte(key),
 		Prove: true,

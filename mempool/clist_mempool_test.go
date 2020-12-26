@@ -1,6 +1,7 @@
 package mempool
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
@@ -121,7 +122,7 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 		{20, 0, -1, 0},
 		{20, 0, 10, 0},
 		{20, 10, 10, 0},
-		{20, 28, 10, 1}, // account for overhead in Data{}
+		{20, 28, 10, 1},
 		{20, 240, 5, 5},
 		{20, 240, -1, 10},
 		{20, 240, 10, 10},
@@ -166,6 +167,7 @@ func TestMempoolFilters(t *testing.T) {
 		{10, nopPreFilter, PostCheckMaxGas(3000), 10},
 		{10, PreCheckMaxBytes(10), PostCheckMaxGas(20), 0},
 		{10, PreCheckMaxBytes(30), PostCheckMaxGas(20), 10},
+		{10, PreCheckMaxBytes(28), PostCheckMaxGas(1), 10},
 		{10, PreCheckMaxBytes(28), PostCheckMaxGas(1), 10},
 		{10, PreCheckMaxBytes(22), PostCheckMaxGas(0), 0},
 	}
@@ -313,11 +315,12 @@ func TestSerialReap(t *testing.T) {
 	}
 
 	commitRange := func(start, end int) {
+		ctx := context.Background()
 		// Deliver some txs.
 		for i := start; i < end; i++ {
 			txBytes := make([]byte, 8)
 			binary.BigEndian.PutUint64(txBytes, uint64(i))
-			res, err := appConnCon.FinalizeBlockSync(abci.RequestFinalizeBlock{Txs: [][]byte{txBytes}})
+			res, err := appConnCon.FinalizeBlockSync(ctx, abci.RequestFinalizeBlock{Txs: [][]byte{txBytes}})
 			if err != nil {
 				t.Errorf("client error committing tx: %v", err)
 			}
@@ -328,7 +331,7 @@ func TestSerialReap(t *testing.T) {
 				}
 			}
 		}
-		res, err := appConnCon.CommitSync()
+		res, err := appConnCon.CommitSync(ctx)
 		if err != nil {
 			t.Errorf("client error committing: %v", err)
 		}
@@ -464,6 +467,7 @@ func TestMempool_CheckTxChecksTxSize(t *testing.T) {
 }
 
 func TestMempoolTxsBytes(t *testing.T) {
+	ctx := context.Background()
 	app := kvstore.NewApplication()
 	cc := proxy.NewLocalClientCreator(app)
 	config := cfg.ResetTestRoot("mempool_test")
@@ -522,10 +526,10 @@ func TestMempoolTxsBytes(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	res, err := appConnCon.FinalizeBlockSync(abci.RequestFinalizeBlock{Txs: [][]byte{txBytes}})
+	res, err := appConnCon.FinalizeBlockSync(ctx, abci.RequestFinalizeBlock{Txs: [][]byte{txBytes}})
 	require.NoError(t, err)
 	require.EqualValues(t, 0, res.DeliveredTxs[0].Code)
-	res2, err := appConnCon.CommitSync()
+	res2, err := appConnCon.CommitSync(ctx)
 	require.NoError(t, err)
 	require.NotEmpty(t, res2.Data)
 

@@ -1,6 +1,7 @@
 package abcicli_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -14,6 +15,8 @@ import (
 	tmrand "github.com/lazyledger/lazyledger-core/libs/rand"
 	"github.com/lazyledger/lazyledger-core/libs/service"
 )
+
+var ctx = context.Background()
 
 func TestProperSyncCalls(t *testing.T) {
 	app := slowApp{}
@@ -33,11 +36,12 @@ func TestProperSyncCalls(t *testing.T) {
 	resp := make(chan error, 1)
 	go func() {
 		// This is BeginBlockSync unrolled....
-		reqres := c.FinalizeBlockAsync(types.RequestFinalizeBlock{})
-		err := c.FlushSync()
-		require.NoError(t, err)
+		reqres, err := c.FinalizeBlockAsync(ctx, types.RequestFinalizeBlock{})
+		assert.NoError(t, err)
+		err = c.FlushSync(context.Background())
+		assert.NoError(t, err)
 		res := reqres.Response.GetFinalizeBlock()
-		require.NotNil(t, res)
+		assert.NotNil(t, res)
 		resp <- c.Error()
 	}()
 
@@ -67,15 +71,17 @@ func TestHangingSyncCalls(t *testing.T) {
 
 	resp := make(chan error, 1)
 	go func() {
-		// Start BeginBlock and flush it
-		reqres := c.FinalizeBlockAsync(types.RequestFinalizeBlock{})
-		flush := c.FlushAsync()
+		// Start FinalizeBlock and flush it
+		reqres, err := c.FinalizeBlockAsync(ctx, types.RequestFinalizeBlock{})
+		assert.NoError(t, err)
+		flush, err := c.FlushAsync(ctx)
+		assert.NoError(t, err)
 		// wait 20 ms for all events to travel socket, but
 		// no response yet from server
 		time.Sleep(20 * time.Millisecond)
 		// kill the server, so the connections break
-		err := s.Stop()
-		require.NoError(t, err)
+		err = s.Stop()
+		assert.NoError(t, err)
 
 		// wait for the response from FinalizeBlock
 		reqres.Wait()
@@ -114,7 +120,7 @@ type slowApp struct {
 	types.BaseApplication
 }
 
-func (slowApp) BeginBlock(req types.RequestBeginBlock) types.ResponseBeginBlock {
+func (slowApp) FinalizeBlock(req types.RequestFinalizeBlock) types.ResponseFinalizeBlock {
 	time.Sleep(200 * time.Millisecond)
-	return types.ResponseBeginBlock{}
+	return types.ResponseFinalizeBlock{}
 }

@@ -182,6 +182,11 @@ func (app *PersistentKVStoreApplication) ApplySnapshotChunk(
 	return types.ResponseApplySnapshotChunk{Result: types.ResponseApplySnapshotChunk_ABORT}
 }
 
+func (app *PersistentKVStoreApplication) PreprocessTxs(
+	req types.RequestPreprocessTxs) types.ResponsePreprocessTxs {
+	return types.ResponsePreprocessTxs{Txs: req.Txs}
+}
+
 //---------------------------------------------
 // update validators
 
@@ -250,7 +255,7 @@ func (app *PersistentKVStoreApplication) execValidatorTx(tx []byte) types.Respon
 	}
 
 	// update
-	return app.updateValidator(types.Ed25519ValidatorUpdate(pubkey, power))
+	return app.updateValidator(types.UpdateValidator(pubkey, power, ""))
 }
 
 // add, update, or remove a validator

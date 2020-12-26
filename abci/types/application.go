@@ -1,13 +1,14 @@
 package types
 
 import (
-	context "golang.org/x/net/context"
+	"context"
 )
 
 // Application is an interface that enables any finite, deterministic state machine
 // to be driven by a blockchain-based replication engine via the ABCI.
 // All methods take a RequestXxx argument and return a ResponseXxx argument,
 // except CheckTx/DeliverTx, which take `tx []byte`, and `Commit`, which takes nothing.
+// nolint:lll // ignore for interface
 type Application interface {
 	// Info/Query Connection
 	Info(RequestInfo) ResponseInfo    // Return application info
@@ -18,6 +19,7 @@ type Application interface {
 
 	// Consensus Connection
 	InitChain(RequestInitChain) ResponseInitChain             // Initialize blockchain w validators/other info from TendermintCore
+	PreprocessTxs(RequestPreprocessTxs) ResponsePreprocessTxs // State machine preprocessing of txs
 	FinalizeBlock(RequestFinalizeBlock) ResponseFinalizeBlock // Signals the beginning of a block
 	// Deliver a tx for full processing
 	// Signals the end of a block, returns changes to the validator set
@@ -80,6 +82,10 @@ func (BaseApplication) LoadSnapshotChunk(req RequestLoadSnapshotChunk) ResponseL
 
 func (BaseApplication) ApplySnapshotChunk(req RequestApplySnapshotChunk) ResponseApplySnapshotChunk {
 	return ResponseApplySnapshotChunk{}
+}
+
+func (BaseApplication) PreprocessTxs(req RequestPreprocessTxs) ResponsePreprocessTxs {
+	return ResponsePreprocessTxs{}
 }
 
 //-------------------------------------------------------
@@ -152,5 +158,11 @@ func (app *GRPCApplication) LoadSnapshotChunk(
 func (app *GRPCApplication) ApplySnapshotChunk(
 	ctx context.Context, req *RequestApplySnapshotChunk) (*ResponseApplySnapshotChunk, error) {
 	res := app.app.ApplySnapshotChunk(*req)
+	return &res, nil
+}
+
+func (app *GRPCApplication) PreprocessTxs(
+	ctx context.Context, req *RequestPreprocessTxs) (*ResponsePreprocessTxs, error) {
+	res := app.app.PreprocessTxs(*req)
 	return &res, nil
 }

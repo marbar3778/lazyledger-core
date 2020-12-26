@@ -33,6 +33,7 @@ message Request {
     RequestLoadSnapshotChunk  load_snapshot_chunk  = 13;
     RequestApplySnapshotChunk apply_snapshot_chunk = 14;
     RequestFinalizeBlock      finalize_block       = 15;
+    RequestPreprocessTxs      preprocess_txs       = 16;
   }
 }
 
@@ -46,6 +47,7 @@ message RequestInfo {
   string version       = 1;
   uint64 block_version = 2;
   uint64 p2p_version   = 3;
+  string abci_version  = 4;
 }
 
 message RequestInitChain {
@@ -73,13 +75,6 @@ message RequestFinalizeBlock {
   repeated bytes          txs                  = 5;
 }
 
-message RequestBeginBlock {
-  bytes                   hash                 = 1;
-  tendermint.types.Header header               = 2 [(gogoproto.nullable) = false];
-  LastCommitInfo          last_commit_info     = 3 [(gogoproto.nullable) = false];
-  repeated Evidence       byzantine_validators = 4 [(gogoproto.nullable) = false];
-}
-
 enum CheckTxType {
   NEW     = 0 [(gogoproto.enumvalue_customname) = "New"];
   RECHECK = 1 [(gogoproto.enumvalue_customname) = "Recheck"];
@@ -92,10 +87,6 @@ message RequestCheckTx {
 
 message RequestDeliverTx {
   bytes tx = 1;
-}
-
-message RequestEndBlock {
-  int64 height = 1;
 }
 
 message RequestCommit {}
@@ -124,6 +115,10 @@ message RequestApplySnapshotChunk {
   string sender = 3;
 }
 
+message RequestPreprocessTxs {
+  repeated bytes txs = 1;
+}
+
 //----------------------------------------
 // Response types
 
@@ -142,6 +137,7 @@ message Response {
     ResponseLoadSnapshotChunk  load_snapshot_chunk  = 14;
     ResponseApplySnapshotChunk apply_snapshot_chunk = 15;
     ResponseFinalizeBlock      finalize_block       = 16;
+    ResponsePreprocessTxs      preprocess_txs       = 17;
   }
 }
 
@@ -159,6 +155,7 @@ message ResponseFlush {}
 message ResponseInfo {
   string data = 1;
 
+  // this is the software version of the application. TODO: remove?
   string version     = 2;
   uint64 app_version = 3;
 
@@ -192,11 +189,6 @@ message ResponseFinalizeBlock {
   ConsensusParams            consensus_param_updates = 4;
 }
 
-message ResponseBeginBlock {
-  repeated Event events = 1
-      [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
-}
-
 message ResponseCheckTx {
   uint32         code       = 1;
   bytes          data       = 2;
@@ -219,14 +211,6 @@ message ResponseDeliverTx {
   repeated Event events     = 7
       [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
   string codespace = 8;
-}
-
-message ResponseEndBlock {
-  repeated ValidatorUpdate validator_updates = 1
-      [(gogoproto.nullable) = false];
-  ConsensusParams consensus_param_updates = 2;
-  repeated Event  events                  = 3
-      [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
 }
 
 message ResponseCommit {
@@ -269,6 +253,11 @@ message ResponseApplySnapshotChunk {
     RETRY_SNAPSHOT  = 4;  // Retry snapshot (combine with refetch and reject)
     REJECT_SNAPSHOT = 5;  // Reject this snapshot, try others
   }
+}
+
+message ResponsePreprocessTxs {
+  repeated bytes            txs      = 1;
+  tendermint.types.Messages messages = 2;
 }
 
 //----------------------------------------
@@ -395,5 +384,6 @@ service ABCIApplication {
   rpc OfferSnapshot(RequestOfferSnapshot) returns (ResponseOfferSnapshot);
   rpc LoadSnapshotChunk(RequestLoadSnapshotChunk) returns (ResponseLoadSnapshotChunk);
   rpc ApplySnapshotChunk(RequestApplySnapshotChunk) returns (ResponseApplySnapshotChunk);
+  rpc PreprocessTxs(RequestPreprocessTxs) returns (ResponsePreprocessTxs);
   rpc FinalizeBlock(RequestFinalizeBlock) returns (ResponseFinalizeBlock);
 }

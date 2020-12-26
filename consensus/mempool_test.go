@@ -26,7 +26,8 @@ func assertMempool(txn txNotifier) mempl.Mempool {
 
 func TestMempoolNoProgressUntilTxsAvailable(t *testing.T) {
 	config := ResetConfig("consensus_mempool_txs_available_test")
-	defer os.RemoveAll(config.RootDir)
+	t.Cleanup(func() { _ = os.RemoveAll(config.RootDir) })
+
 	config.Consensus.CreateEmptyBlocks = false
 	state, privVals := randGenesisState(1, false, 10)
 	cs := newStateWithConfig(config, state, privVals[0], NewCounterApplication())
@@ -45,7 +46,7 @@ func TestMempoolNoProgressUntilTxsAvailable(t *testing.T) {
 
 func TestMempoolProgressAfterCreateEmptyBlocksInterval(t *testing.T) {
 	config := ResetConfig("consensus_mempool_txs_available_test")
-	defer os.RemoveAll(config.RootDir)
+	t.Cleanup(func() { _ = os.RemoveAll(config.RootDir) })
 
 	config.Consensus.CreateEmptyBlocksInterval = ensureTimeout
 	state, privVals := randGenesisState(1, false, 10)
@@ -63,7 +64,8 @@ func TestMempoolProgressAfterCreateEmptyBlocksInterval(t *testing.T) {
 
 func TestMempoolProgressInHigherRound(t *testing.T) {
 	config := ResetConfig("consensus_mempool_txs_available_test")
-	defer os.RemoveAll(config.RootDir)
+	t.Cleanup(func() { _ = os.RemoveAll(config.RootDir) })
+
 	config.Consensus.CreateEmptyBlocks = false
 	state, privVals := randGenesisState(1, false, 10)
 	cs := newStateWithConfig(config, state, privVals[0], NewCounterApplication())
@@ -255,4 +257,9 @@ func (app *CounterApplication) Commit() abci.ResponseCommit {
 	hash := make([]byte, 8)
 	binary.BigEndian.PutUint64(hash, uint64(app.txCount))
 	return abci.ResponseCommit{Data: hash}
+}
+
+func (app *CounterApplication) PreprocessTxs(
+	req abci.RequestPreprocessTxs) abci.ResponsePreprocessTxs {
+	return abci.ResponsePreprocessTxs{Txs: req.Txs}
 }

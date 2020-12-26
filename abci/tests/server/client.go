@@ -2,6 +2,7 @@ package testsuite
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 
@@ -10,15 +11,17 @@ import (
 	tmrand "github.com/lazyledger/lazyledger-core/libs/rand"
 )
 
+var ctx = context.Background()
+
 func InitChain(client abcicli.Client) error {
 	total := 10
 	vals := make([]types.ValidatorUpdate, total)
 	for i := 0; i < total; i++ {
 		pubkey := tmrand.Bytes(33)
 		power := tmrand.Int()
-		vals[i] = types.Ed25519ValidatorUpdate(pubkey, int64(power))
+		vals[i] = types.UpdateValidator(pubkey, int64(power), "")
 	}
-	_, err := client.InitChainSync(types.RequestInitChain{
+	_, err := client.InitChainSync(ctx, types.RequestInitChain{
 		Validators: vals,
 	})
 	if err != nil {
@@ -30,7 +33,7 @@ func InitChain(client abcicli.Client) error {
 }
 
 func Commit(client abcicli.Client, hashExp []byte) error {
-	res, err := client.CommitSync()
+	res, err := client.CommitSync(ctx)
 	data := res.Data
 	if err != nil {
 		fmt.Println("Failed test: Commit")
@@ -48,7 +51,7 @@ func Commit(client abcicli.Client, hashExp []byte) error {
 
 // todo rename to finalize block
 func DeliverTx(client abcicli.Client, txBytes []byte, codeExp uint32, dataExp []byte) error {
-	res, _ := client.FinalizeBlockSync(types.RequestFinalizeBlock{Txs: [][]byte{txBytes}})
+	res, _ := client.FinalizeBlockSync(ctx, types.RequestFinalizeBlock{Txs: [][]byte{txBytes}})
 	txRes := res.DeliveredTxs[0]
 	code, data, log := txRes.Code, txRes.Data, txRes.Log
 	if code != codeExp {
@@ -68,7 +71,7 @@ func DeliverTx(client abcicli.Client, txBytes []byte, codeExp uint32, dataExp []
 }
 
 func CheckTx(client abcicli.Client, txBytes []byte, codeExp uint32, dataExp []byte) error {
-	res, _ := client.CheckTxSync(types.RequestCheckTx{Tx: txBytes})
+	res, _ := client.CheckTxSync(ctx, types.RequestCheckTx{Tx: txBytes})
 	code, data, log := res.Code, res.Data, res.Log
 	if code != codeExp {
 		fmt.Println("Failed test: CheckTx")
