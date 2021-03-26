@@ -23,7 +23,7 @@ require (
 	github.com/lazyledger/nmt v0.2.0
 	github.com/lazyledger/rsmt2d v0.0.0-20201215203123-e5ec7910ddd4
 	github.com/libp2p/go-buffer-pool v0.0.2
-	github.com/minio/highwayhash v1.0.1
+	github.com/minio/highwayhash v1.0.2
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	github.com/pkg/errors v0.9.1
